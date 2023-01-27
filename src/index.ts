@@ -6,6 +6,9 @@
 import {Web3Api, Web3ApiListener} from 'smartypay-client-web3-common';
 import Web3 from 'web3';
 
+
+const Name = 'SmartyPayMetamask';
+
 export class SmartyPayMetamask implements Web3Api {
 
   private _listeners: Web3ApiListener[] = [];
@@ -20,8 +23,10 @@ export class SmartyPayMetamask implements Web3Api {
   }
 
   name(): string {
-    return 'SmartyPayMetamask';
+    return Name;
   }
+
+  static apiName = Name;
 
   hasWallet(): boolean {
     // @ts-ignore
