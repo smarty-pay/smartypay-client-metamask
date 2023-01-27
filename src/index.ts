@@ -4,15 +4,17 @@
 */
 
 import {Web3Api, Web3ApiListener} from 'smartypay-client-web3-common';
-import Web3 from 'web3';
+import {RawProvider} from 'smartypay-client-web3-common/dist/tsc/types';
 
 
+// @ts-ignore
+const rawProvider: any = window.ethereum;
 const Name = 'SmartyPayMetamask';
 
 export class SmartyPayMetamask implements Web3Api {
 
   private _listeners: Web3ApiListener[] = [];
-  private _web3: Web3|undefined;
+  private _connected = false;
 
   addListener(listener: Web3ApiListener) {
     this._listeners.push(listener);
@@ -29,8 +31,7 @@ export class SmartyPayMetamask implements Web3Api {
   static apiName = Name;
 
   hasWallet(): boolean {
-    // @ts-ignore
-    return !! window.ethereum;
+    return !! rawProvider;
   }
 
   async connect() {
@@ -43,17 +44,13 @@ export class SmartyPayMetamask implements Web3Api {
     }
 
     // show Metamask Connect Screen
-    // @ts-ignore
-    await window.ethereum.request({ method: "eth_requestAccounts" });
-
-    // @ts-ignore
-    this._web3 = new Web3(window.ethereum);
+    await rawProvider.request({ method: "eth_requestAccounts"});
+    this._connected = true;
 
     this._listeners.forEach(l => l.onConnected?.());
 
     // Listen Metamask events
-    // @ts-ignore
-    window.ethereum.on('accountsChanged', (accounts)=>{
+    rawProvider.on('accountsChanged', (accounts)=>{
       const newAddress = accounts && accounts.length>0? accounts[0] : undefined;
       if( ! newAddress){
         this.resetState();
@@ -66,8 +63,14 @@ export class SmartyPayMetamask implements Web3Api {
 
   async getAddress() {
     this.checkConnection();
-    const accounts = await this._web3!.eth.getAccounts();
+    const accounts = await rawProvider.request({ method: 'eth_requestAccounts' });
     return accounts[0];
+  }
+
+  async getChainId(){
+    this.checkConnection();
+    const chainId:string = await rawProvider.request({ method: 'eth_chainId' });
+    return Number(chainId);
   }
 
   async disconnect() {
@@ -76,22 +79,22 @@ export class SmartyPayMetamask implements Web3Api {
 
 
   isConnected(): boolean {
-    return !! this._web3;
+    return this._connected;
   }
 
-  web3(): Web3 {
+  getRawProvider(): RawProvider {
     this.checkConnection();
-    return this._web3!;
+    return rawProvider as RawProvider;
   }
 
   checkConnection(){
-    if( ! this._web3){
+    if( ! this._connected){
       throw new Error('Metamask not connected')
     }
   }
 
   resetState(){
-    this._web3 = undefined;
+    this._connected = false;
   }
 
 }
