@@ -6,9 +6,6 @@
 import {Web3Api, Web3ApiListener} from 'smartypay-client-web3-common';
 import {RawProvider} from 'smartypay-client-web3-common/dist/tsc/types';
 
-
-// @ts-ignore
-const rawProvider: any = window.ethereum;
 const Name = 'SmartyPayMetamask';
 
 export class SmartyPayMetamask implements Web3Api {
@@ -31,7 +28,8 @@ export class SmartyPayMetamask implements Web3Api {
   static apiName = Name;
 
   hasWallet(): boolean {
-    return !! rawProvider;
+    // @ts-ignore
+    return !! window.ethereum;
   }
 
   async connect() {
@@ -44,13 +42,15 @@ export class SmartyPayMetamask implements Web3Api {
     }
 
     // show Metamask Connect Screen
-    await rawProvider.request({ method: "eth_requestAccounts"});
+    // @ts-ignore
+    await window.ethereum.request({ method: "eth_requestAccounts"});
     this._connected = true;
 
     this._listeners.forEach(l => l.onConnected?.());
 
     // Listen Metamask events
-    rawProvider.on('accountsChanged', (accounts)=>{
+    // @ts-ignore
+    window.ethereum.on('accountsChanged', (accounts)=>{
       const newAddress = accounts && accounts.length>0? accounts[0] : undefined;
       if( ! newAddress){
         this.resetState();
@@ -63,12 +63,14 @@ export class SmartyPayMetamask implements Web3Api {
 
   async getAddress() {
     this.checkConnection();
-    const accounts = await rawProvider.request({ method: 'eth_requestAccounts' });
+    // @ts-ignore
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     return accounts[0];
   }
 
   async getChainId(){
     this.checkConnection();
+    // @ts-ignore
     const chainId:string = await rawProvider.request({ method: 'eth_chainId' });
     return Number(chainId);
   }
@@ -84,7 +86,8 @@ export class SmartyPayMetamask implements Web3Api {
 
   getRawProvider(): RawProvider {
     this.checkConnection();
-    return rawProvider as RawProvider;
+    // @ts-ignore
+    return window.ethereum as RawProvider;
   }
 
   checkConnection(){
