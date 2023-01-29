@@ -3,22 +3,22 @@
   @author Evgeny Dolganov <evgenij.dolganov@gmail.com>
 */
 
-import {Web3Api, Web3ApiListener} from 'smartypay-client-web3-common';
-import {RawProvider} from 'smartypay-client-web3-common/dist/tsc/types';
+import {Web3Api, Web3ApiEvent, RawProvider} from 'smartypay-client-web3-common';
+import {util} from 'smartypay-client-model';
 
 const Name = 'SmartyPayMetamask';
 
 export class SmartyPayMetamask implements Web3Api {
 
-  private _listeners: Web3ApiListener[] = [];
   private _connected = false;
+  private listeners = new util.ListenersMap<Web3ApiEvent>();
 
-  addListener(listener: Web3ApiListener) {
-    this._listeners.push(listener);
+  addListener(event: Web3ApiEvent, listener:(...args: any[]) => void) {
+    this.listeners.addListener(event, listener);
   }
 
-  removeListener(listener: Web3ApiListener) {
-    this._listeners = this._listeners.filter(l => l !== listener);
+  removeListener(listener:(...args: any[]) => void) {
+    this.listeners.removeListener(listener);
   }
 
   name(): string {
@@ -46,7 +46,7 @@ export class SmartyPayMetamask implements Web3Api {
     await window.ethereum.request({ method: "eth_requestAccounts"});
     this._connected = true;
 
-    this._listeners.forEach(l => l.onConnected?.());
+    this.listeners.getListeners('connected').forEach(l => l());
 
     // Listen Metamask events
     // @ts-ignore
@@ -54,9 +54,9 @@ export class SmartyPayMetamask implements Web3Api {
       const newAddress = accounts && accounts.length>0? accounts[0] : undefined;
       if( ! newAddress){
         this.resetState();
-        this._listeners.forEach(l => l.onDisconnectedByRemote?.());
+        this.listeners.getListeners('disconnected').forEach(l => l());
       } else {
-        this._listeners.forEach(l => l.onAccountsChanged?.(newAddress));
+        this.listeners.getListeners('accountsChanged').forEach(l => l(newAddress));
       }
     });
   }

@@ -21,8 +21,8 @@
     "esbuild-browser": "node ./build.js"
   },
   "dependencies": {
-    "smartypay-client-model": "1.1.1",
-    "smartypay-client-web3-common": "1.3.0"
+    "smartypay-client-model": "file:../smartypay-client-model",
+    "smartypay-client-web3-common": "file:../smartypay-client-web3-common"
   },
   "devDependencies": {
     "@types/jest": "^26.0.21",
