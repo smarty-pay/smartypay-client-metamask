@@ -10,6 +10,9 @@ const Name = 'SmartyPayMetamask';
 
 
 export const SmartyPayMetamaskProvider: Web3ApiProvider = {
+  name(): string {
+    return Name;
+  },
   makeWeb3Api(): Web3Api {
     return new SmartyPayMetamask();
   }
@@ -46,7 +49,7 @@ class SmartyPayMetamask implements Web3Api {
     }
 
     if (!this.hasWallet()) {
-      throw new Error('no metamask');
+      throw util.makeError(Name, 'no Metamask');
     }
 
     // show Metamask Connect Screen
@@ -54,9 +57,9 @@ class SmartyPayMetamask implements Web3Api {
     await window.ethereum.request({method: "eth_requestAccounts"});
 
     this.connectedFlag = true;
-    this.listeners.getListeners('wallet-connected').forEach(l => l());
+    this.listeners.fireEvent('wallet-connected');
 
-    // add listener once for Metamask events
+    // add listeners only once
     if(this.useWalletEvents){
       return;
     }
@@ -64,17 +67,30 @@ class SmartyPayMetamask implements Web3Api {
 
     // @ts-ignore
     window.ethereum.on('accountsChanged', (accounts) => {
+
+      // skip events on disconnected state
+      if( ! this.connectedFlag){
+        return;
+      }
+
       const newAddress = accounts && accounts.length > 0 ? accounts[0] : undefined;
       if (!newAddress) {
         this.disconnect();
       } else {
-        this.listeners.getListeners('wallet-account-changed').forEach(l => l(newAddress));
+        this.listeners.fireEvent('wallet-account-changed', newAddress);
       }
     });
+
     // @ts-ignore
     window.ethereum.on('chainChanged', (chainIdHex: string) => {
+
+      // skip events on disconnected state
+      if( ! this.connectedFlag){
+        return;
+      }
+
       const chainId = Number(chainIdHex);
-      this.listeners.getListeners('wallet-network-changed').forEach(l => l(chainId));
+      this.listeners.fireEvent('wallet-network-changed', chainId);
     });
   }
 
@@ -94,7 +110,7 @@ class SmartyPayMetamask implements Web3Api {
 
   async disconnect() {
     this.connectedFlag = false;
-    this.listeners.getListeners('wallet-disconnected').forEach(l => l());
+    this.listeners.fireEvent('wallet-disconnected');
   }
 
 
@@ -110,7 +126,7 @@ class SmartyPayMetamask implements Web3Api {
 
   checkConnection() {
     if (!this.connectedFlag) {
-      throw new Error('Metamask not connected')
+      throw util.makeError(Name,'Metamask not connected');
     }
   }
 }
