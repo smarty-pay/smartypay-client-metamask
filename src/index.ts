@@ -6,7 +6,7 @@
 import {Web3Api, Web3ApiEvent, RawProvider, Web3ApiProvider} from 'smartypay-client-web3-common';
 import {util} from 'smartypay-client-model';
 
-const Name = 'SmartyPayMetamask';
+const Name = 'Metamask';
 
 
 export const SmartyPayMetamaskProvider: Web3ApiProvider = {
