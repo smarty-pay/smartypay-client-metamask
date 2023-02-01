@@ -3,7 +3,7 @@
   @author Evgeny Dolganov <evgenij.dolganov@gmail.com>
 */
 
-import {Web3Api, Web3ApiEvent, RawProvider, Web3ApiProvider} from 'smartypay-client-web3-common';
+import {Web3Api, Web3ApiEvent, RawProvider, Web3ApiProvider, Web3Common} from 'smartypay-client-web3-common';
 import {util} from 'smartypay-client-model';
 
 const Name = 'Metamask';
@@ -65,7 +65,7 @@ class SmartyPayMetamask implements Web3Api {
 
     // show Metamask Connect Screen
     // @ts-ignore
-    await window.ethereum.request({method: "eth_requestAccounts"});
+    await window.ethereum.request({method: "eth_accounts"});
 
     this.connectedFlag = true;
     this.listeners.fireEvent('wallet-connected');
@@ -108,8 +108,8 @@ class SmartyPayMetamask implements Web3Api {
   async getAddress() {
     this.checkConnection();
     // @ts-ignore
-    const accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
-    return accounts[0];
+    const accounts = await window.ethereum.request({method: 'eth_accounts'});
+    return Web3Common.getNormalAddress(accounts[0]);
   }
 
   async getChainId() {
