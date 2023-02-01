@@ -9,12 +9,24 @@ import {util} from 'smartypay-client-model';
 const Name = 'Metamask';
 
 
-export const SmartyPayMetamaskProvider: Web3ApiProvider = {
+interface ProviderExt {
+  isNoMetamaskError(error: any): boolean,
+}
+
+export const SmartyPayMetamaskProvider: Web3ApiProvider & ProviderExt = {
   name(): string {
     return Name;
   },
   makeWeb3Api(): Web3Api {
     return new SmartyPayMetamask();
+  },
+  hasWallet(): boolean {
+    // @ts-ignore
+    return !!window.ethereum;
+  },
+  isNoMetamaskError(error: any){
+    const msg = error?.toString() || '';
+    return msg.includes('no Metamask');
   }
 }
 
@@ -39,8 +51,7 @@ class SmartyPayMetamask implements Web3Api {
   static apiName = Name;
 
   hasWallet(): boolean {
-    // @ts-ignore
-    return !!window.ethereum;
+    return SmartyPayMetamaskProvider.hasWallet();
   }
 
   async connect() {
