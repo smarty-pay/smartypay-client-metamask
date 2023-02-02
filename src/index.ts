@@ -115,7 +115,7 @@ class SmartyPayMetamask implements Web3Api {
   async getChainId() {
     this.checkConnection();
     // @ts-ignore
-    const chainId: string = await rawProvider.request({method: 'eth_chainId'});
+    const chainId: string = await window.ethereum.request({method: 'eth_chainId'});
     return Number(chainId);
   }
 
