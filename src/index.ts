@@ -3,22 +3,45 @@
   @author Evgeny Dolganov <evgenij.dolganov@gmail.com>
 */
 
-import {Web3Api, Web3ApiListener} from 'smartypay-client-web3-common';
-import {RawProvider} from 'smartypay-client-web3-common/dist/tsc/types';
+import {Web3Api, Web3ApiEvent, RawProvider, Web3ApiProvider, Web3Common} from 'smartypay-client-web3-common';
+import {util} from 'smartypay-client-model';
 
-const Name = 'SmartyPayMetamask';
+const Name = 'Metamask';
 
-export class SmartyPayMetamask implements Web3Api {
 
-  private _listeners: Web3ApiListener[] = [];
-  private _connected = false;
+interface ProviderExt {
+  isNoMetamaskError(error: any): boolean,
+}
 
-  addListener(listener: Web3ApiListener) {
-    this._listeners.push(listener);
+export const SmartyPayMetamaskProvider: Web3ApiProvider & ProviderExt = {
+  name(): string {
+    return Name;
+  },
+  makeWeb3Api(): Web3Api {
+    return new SmartyPayMetamask();
+  },
+  hasWallet(): boolean {
+    // @ts-ignore
+    return !!window.ethereum;
+  },
+  isNoMetamaskError(error: any){
+    const msg = error?.toString() || '';
+    return msg.includes('no Metamask');
+  }
+}
+
+class SmartyPayMetamask implements Web3Api {
+
+  private connectedFlag = false;
+  private useWalletEvents = false;
+  private listeners = new util.ListenersMap<Web3ApiEvent>();
+
+  addListener(event: Web3ApiEvent, listener: (...args: any[]) => void) {
+    this.listeners.addListener(event, listener);
   }
 
-  removeListener(listener: Web3ApiListener) {
-    this._listeners = this._listeners.filter(l => l !== listener);
+  removeListener(listener: (...args: any[]) => void) {
+    this.listeners.removeListener(listener);
   }
 
   name(): string {
@@ -28,60 +51,82 @@ export class SmartyPayMetamask implements Web3Api {
   static apiName = Name;
 
   hasWallet(): boolean {
-    // @ts-ignore
-    return !! window.ethereum;
+    return SmartyPayMetamaskProvider.hasWallet();
   }
 
   async connect() {
-    if( this.isConnected()){
+    if (this.isConnected()) {
       return;
     }
 
-    if( ! this.hasWallet()){
-      throw new Error('no metamask');
+    if (!this.hasWallet()) {
+      throw util.makeError(Name, 'no Metamask');
     }
 
     // show Metamask Connect Screen
     // @ts-ignore
-    await window.ethereum.request({ method: "eth_requestAccounts"});
-    this._connected = true;
+    await window.ethereum.request({method: "eth_requestAccounts"});
 
-    this._listeners.forEach(l => l.onConnected?.());
+    this.connectedFlag = true;
+    this.listeners.fireEvent('wallet-connected');
 
-    // Listen Metamask events
+    // add listeners only once
+    if(this.useWalletEvents){
+      return;
+    }
+    this.useWalletEvents = true;
+
     // @ts-ignore
-    window.ethereum.on('accountsChanged', (accounts)=>{
-      const newAddress = accounts && accounts.length>0? accounts[0] : undefined;
-      if( ! newAddress){
-        this.resetState();
-        this._listeners.forEach(l => l.onDisconnectedByRemote?.());
-      } else {
-        this._listeners.forEach(l => l.onAccountsChanged?.(newAddress));
+    window.ethereum.on('accountsChanged', (accounts) => {
+
+      // skip events on disconnected state
+      if( ! this.connectedFlag){
+        return;
       }
+
+      const newAddress = accounts && accounts.length > 0 ? accounts[0] : undefined;
+      if (!newAddress) {
+        this.disconnect();
+      } else {
+        this.listeners.fireEvent('wallet-account-changed', newAddress);
+      }
+    });
+
+    // @ts-ignore
+    window.ethereum.on('chainChanged', (chainIdHex: string) => {
+
+      // skip events on disconnected state
+      if( ! this.connectedFlag){
+        return;
+      }
+
+      const chainId = Number(chainIdHex);
+      this.listeners.fireEvent('wallet-network-changed', chainId);
     });
   }
 
   async getAddress() {
     this.checkConnection();
     // @ts-ignore
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    return accounts[0];
+    const accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
+    return Web3Common.getNormalAddress(accounts[0]);
   }
 
-  async getChainId(){
+  async getChainId() {
     this.checkConnection();
     // @ts-ignore
-    const chainId:string = await rawProvider.request({ method: 'eth_chainId' });
+    const chainId: string = await window.ethereum.request({method: 'eth_chainId'});
     return Number(chainId);
   }
 
   async disconnect() {
-    this.resetState();
+    this.connectedFlag = false;
+    this.listeners.fireEvent('wallet-disconnected');
   }
 
 
   isConnected(): boolean {
-    return this._connected;
+    return this.connectedFlag;
   }
 
   getRawProvider(): RawProvider {
@@ -90,14 +135,9 @@ export class SmartyPayMetamask implements Web3Api {
     return window.ethereum as RawProvider;
   }
 
-  checkConnection(){
-    if( ! this._connected){
-      throw new Error('Metamask not connected')
+  checkConnection() {
+    if (!this.connectedFlag) {
+      throw util.makeError(Name,'Metamask not connected');
     }
   }
-
-  resetState(){
-    this._connected = false;
-  }
-
 }
