@@ -65,7 +65,7 @@ class SmartyPayMetamask implements Web3Api {
 
     // show Metamask Connect Screen
     // @ts-ignore
-    await window.ethereum.request({method: "eth_accounts"});
+    await window.ethereum.request({method: "eth_requestAccounts"});
 
     this.connectedFlag = true;
     this.listeners.fireEvent('wallet-connected');
@@ -108,7 +108,7 @@ class SmartyPayMetamask implements Web3Api {
   async getAddress() {
     this.checkConnection();
     // @ts-ignore
-    const accounts = await window.ethereum.request({method: 'eth_accounts'});
+    const accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
     return Web3Common.getNormalAddress(accounts[0]);
   }
 
