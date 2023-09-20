@@ -5,6 +5,7 @@
 
 
 import {SmartyPayMetamaskProvider} from './index';
+import {getEthereum} from "./ethereum-api";
 
 describe('SmartyPayMetamaskProvider', ()=>{
 
@@ -30,11 +31,11 @@ describe('SmartyPayMetamaskProvider', ()=>{
         await api.connect();
 
         // check with invalid address
-        (window as any).ethereum.request = ()=> [invalidAddress];
+        getEthereum().request = ()=> [invalidAddress];
         expect(await api.getAddress()).toBe(validAddress);
 
         // check with valid address
-        (window as any).ethereum.request = ()=> [validAddress];
+        getEthereum().request = ()=> [validAddress];
         expect(await api.getAddress()).toBe(validAddress);
 
       });
