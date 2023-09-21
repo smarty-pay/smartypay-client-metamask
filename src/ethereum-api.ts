@@ -1,7 +1,8 @@
+import {util} from "smartypay-client-model";
 
 
 export function getEthereum() {
-    return (window as any).ethereum;
+    return util.isNode()? undefined : (window as any).ethereum;
 }
 
 export function isEthereumApiFromMetamask() {
@@ -14,6 +15,10 @@ export function isEthereumApiFromTrustWallet() {
 }
 
 export function isMultiEthereumApis() {
+
+    if(util.isNode())
+        return false;
+
     const api = getEthereum();
     if (!api) {
         return false;
