@@ -1,6 +1,6 @@
 {
   "name": "smartypay-client-metamask",
-  "version": "2.9.0",
+  "version": "2.10.0",
   "description": "Metamask support for SmartyPay api",
   "author": "Evgeny Dolganov <evgenij.dolganov@gmail.com>",
   "repository": "https://github.com/smarty-pay/smartypay-client-metamask",
