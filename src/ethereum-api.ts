@@ -1,3 +1,8 @@
+/*
+  Smarty Pay Client Metamask
+  @author Evgeny Dolganov <evgenij.dolganov@gmail.com>
+*/
+
 import { util } from 'smartypay-client-model';
 
 export function getEthereum() {

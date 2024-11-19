@@ -1,5 +1,5 @@
 /*
-  SMARTy Pay Client Metamask
+  Smarty Pay Client Metamask
   @author Evgeny Dolganov <evgenij.dolganov@gmail.com>
 */
 

@@ -1,2 +1,2 @@
 # smartypay-client-metamask
-Metamask support for SmartyPay api
+Metamask support for Smarty Pay api
